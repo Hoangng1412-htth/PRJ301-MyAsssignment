@@ -10,8 +10,11 @@ package model;
  */
 public class Employee extends BaseModel {
     private String name;
-    private Department dept; 
+    private Division div; 
     private Employee supervisor;
+    private String phone_number;
+    private String address;
+    private String email;
 
     public String getName() {
         return name;
@@ -21,13 +24,15 @@ public class Employee extends BaseModel {
         this.name = name;
     }
 
-    public Department getDept() {
-        return dept;
+    public Division getDiv() {
+        return div;
     }
 
-    public void setDept(Department dept) {
-        this.dept = dept;
+    public void setDiv(Division div) {
+        this.div = div;
     }
+
+   
 
     public Employee getSupervisor() {
         return supervisor;
@@ -35,6 +40,30 @@ public class Employee extends BaseModel {
 
     public void setSupervisor(Employee supervisor) {
         this.supervisor = supervisor;
+    }
+
+    public String getPhone_number() {
+        return phone_number;
+    }
+
+    public void setPhone_number(String phone_number) {
+        this.phone_number = phone_number;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
     
 }
