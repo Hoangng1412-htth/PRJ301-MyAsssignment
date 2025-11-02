@@ -20,8 +20,8 @@ public abstract class DBContext<T extends BaseModel> {
     public DBContext()
     {
         try {
-            String user = "sonnt";
-            String pass = "12345678";
+            String user = "hoangng";
+            String pass = "123456";
             String url = "jdbc:sqlserver://localhost:1433;databaseName=FALL25_Assignment;encrypt=true;trustServerCertificate=true;";
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
             connection = DriverManager.getConnection(url, user, pass);
