@@ -23,7 +23,7 @@ public class RoleDBContext extends DBContext<Role> {
 
         try {
             String sql = """
-                                     SELECT r.rid,r.rname,f.fid,f.url
+                                     SELECT r.rid,r.rname,f.fid,f.url,f.fname
                                      FROM [User] u INNER JOIN [UserRole] ur ON u.uid = ur.uid
                                      \t\t\t\t\t\tINNER JOIN [Role] r ON r.rid = ur.rid
                                      \t\t\t\t\t\tINNER JOIN [RoleFeature] rf ON rf.rid = r.rid
@@ -42,15 +42,17 @@ public class RoleDBContext extends DBContext<Role> {
                 if(rid != current.getId())
                 {
                     current = new Role();
-                    current.setId(id);
+                    current.setId(rid);
                     current.setName(rs.getString("rname"));
                     roles.add(current);
                 }
                 Feature f = new Feature();
                 f.setId(rs.getInt("fid"));
                 f.setUrl(rs.getString("url"));
+                f.setFname(rs.getString("fname"));
                 current.getFeatures().add(f);
             }
+
             
         } catch (SQLException ex) {
             Logger.getLogger(RoleDBContext.class.getName()).log(Level.SEVERE, null, ex);
