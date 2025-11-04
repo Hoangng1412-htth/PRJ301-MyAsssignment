@@ -91,10 +91,24 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
-    @Override
-    public void insert(RequestForLeave model) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+@Override
+public void insert(RequestForLeave model) {
+    try {
+        String sql = "INSERT INTO RequestForLeave "
+                   + "(created_by, created_time, [from], [to], reason, status) "
+                   + "VALUES (?, GETDATE(), ?, ?, ?, 0)";
+        PreparedStatement stm = connection.prepareStatement(sql);
+        stm.setInt(1, model.getCreated_by().getId());
+        stm.setDate(2, model.getFrom());
+        stm.setDate(3, model.getTo());
+        stm.setString(4, model.getReason());
+        stm.executeUpdate();
+    } catch (SQLException ex) {
+        Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
+    } finally {
+        closeConnection();
     }
+}
 
     @Override
     public void update(RequestForLeave model) {
