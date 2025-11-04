@@ -13,7 +13,16 @@ import model.BaseModel;
  */
 public class Feature extends BaseModel {
     private String url;
+    private String fname;
     private ArrayList<Role> roles = new ArrayList<>();
+
+    public String getFname() {
+        return fname;
+    }
+
+    public void setFname(String fname) {
+        this.fname = fname;
+    }
 
     public String getUrl() {
         return url;
