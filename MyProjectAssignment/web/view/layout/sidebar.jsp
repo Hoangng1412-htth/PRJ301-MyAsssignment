@@ -1,17 +1,30 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <div class="sidebar">
 
-    <c:if test="${not empty sessionScope.features}">
-        <c:forEach var="f" items="${sessionScope.features}">
-            <a href="${pageContext.request.contextPath}${f.url}">
-                ${f.fname}
-            </a>
+    <!-- Danh sách chức năng theo quyền -->
+    <c:if test="${not empty sessionScope.auth.roles}">
+        <!-- Tạo 1 danh sách featureId đã hiển thị để tránh trùng -->
+        <c:set var="shownFeatures" value="" />
+
+        <c:forEach var="role" items="${sessionScope.auth.roles}">
+            <c:forEach var="feature" items="${role.features}">
+                <!-- Nếu feature chưa được hiển thị -->
+               <c:if test="${not fn:contains(shownFeatures, feature.id)}">
+    <a href="${pageContext.request.contextPath}${feature.url}">
+        ${feature.fname}
+    </a>
+    <c:set var="shownFeatures" value="${shownFeatures},${feature.id}" />
+</c:if>
+
+            </c:forEach>
         </c:forEach>
     </c:if>
 
     <hr>
 
+    <!-- Nút Sign Out -->
     <a href="${pageContext.request.contextPath}/logout" class="logout-btn">🚪 Sign Out</a>
 </div>
