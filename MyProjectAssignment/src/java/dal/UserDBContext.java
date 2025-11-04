@@ -9,6 +9,7 @@ import model.iam.User;
 import java.sql.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import model.Division;
 import model.Employee;
 
 /**
@@ -20,17 +21,20 @@ public class UserDBContext extends DBContext<User> {
     public User get(String username, String password) {
         try {
             String sql = """
-                                     SELECT
-                                     u.uid,
-                                     u.username,
-                                     u.displayname,
-                                     e.eid,
-                                     e.ename
-                                     FROM [User] u INNER JOIN [Enrollment] en ON u.[uid] = en.[uid]
-                                     \t\t\t\t\tINNER JOIN [Employee] e ON e.eid = en.eid
-                                     \t\t\t\t\tWHERE
-                                     \t\t\t\t\tu.username = ? AND u.[password] = ?
-                                     \t\t\t\t\tAND en.active = 1""";
+                         SELECT
+                             u.uid,
+                             u.username,
+                             u.displayname,
+                             e.eid,
+                             e.ename,
+                             d.did,
+                             d.dname
+                         FROM [User] u
+                          \t\t\t\t\tINNER JOIN [Enrollment] en ON u.[uid] = en.[uid]
+                          \t\t\t\t\tINNER JOIN [Employee] e ON e.eid = en.eid
+                          \t\t\t\t\tLEFT JOIN [Division] d ON e.did = d.did
+                          \t\t\t\t\tWHERE u.username = ? AND u.[password] = ? AND en.active = 1
+                         """;
             PreparedStatement stm = connection.prepareStatement(sql);
             stm.setString(1, username);
             stm.setString(2, password);
@@ -42,7 +46,10 @@ public class UserDBContext extends DBContext<User> {
                 e.setId(rs.getInt("eid"));
                 e.setName(rs.getString("ename"));
                 u.setEmployee(e);
-                
+                Division div = new Division();
+                div.setDname(rs.getString("dname"));
+                e.setDiv(div);
+
                 u.setUsername(username);
                 u.setId(rs.getInt("uid"));
                 u.setDisplayname(rs.getString("displayname"));
