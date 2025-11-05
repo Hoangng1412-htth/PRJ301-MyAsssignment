@@ -24,6 +24,9 @@
             <label>Đến ngày:</label>
             <input type="date" name="to" required />
         </div>
+        <c:if test="${not empty msg}">
+            <div class="message">${msg}</div>
+        </c:if>
 
         <div class="form-group">
             <label>Lý do nghỉ:</label>
