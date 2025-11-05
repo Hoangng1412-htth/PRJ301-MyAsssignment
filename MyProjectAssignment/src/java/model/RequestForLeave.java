@@ -21,9 +21,17 @@ public class RequestForLeave extends BaseModel {
     private String reason;
     private int status;
     private Employee processed_by;
-    
+    private String type;
     public Employee getCreated_by() {
         return created_by;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public void setCreated_by(Employee created_by) {
