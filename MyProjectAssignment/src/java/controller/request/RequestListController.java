@@ -43,6 +43,6 @@ public class RequestListController extends BaseRequiredAuthorizationController {
     @Override
     protected void processPost(HttpServletRequest req, HttpServletResponse resp, User user)
             throws ServletException, IOException {
-        // POST method is not used in this list
+    
     }
 }
