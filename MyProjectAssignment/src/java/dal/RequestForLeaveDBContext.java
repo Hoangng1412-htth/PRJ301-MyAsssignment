@@ -231,7 +231,7 @@ public ArrayList<RequestForLeave> getRequestsByRolePaged(User user, int pageInde
                 SELECT 
                     ROW_NUMBER() OVER (ORDER BY r.created_time DESC) AS row_index,
                     r.rid, e.ename AS employee_name, d.dname AS division_name,
-                    r.[from], r.[to],r.type,
+                    r.[from], r.[to], r.type,
                     DATEDIFF(day, r.[from], r.[to]) + 1 AS total_days,
                     r.reason, r.status, p.ename AS processed_name
                 FROM RequestForLeave r
@@ -241,10 +241,11 @@ public ArrayList<RequestForLeave> getRequestsByRolePaged(User user, int pageInde
                 WHERE 1=1
         """;
 
+        // Xử lý quyền truy cập theo vai trò (nếu không phải Director thì chỉ thấy những đơn của mình hoặc cấp dưới)
         boolean isDirector = user.getRoles().stream()
             .anyMatch(r -> r.getName().equalsIgnoreCase("Director"));
         if (!isDirector) {
-            sql += " AND (r.created_by IN (SELECT eid FROM Org))";
+            sql += " AND r.created_by IN (SELECT eid FROM Org)";
         }
 
         sql += """
@@ -267,7 +268,6 @@ public ArrayList<RequestForLeave> getRequestsByRolePaged(User user, int pageInde
             r.setTo(rs.getDate("to"));
             r.setReason(rs.getString("reason"));
             r.setStatus(rs.getInt("status"));
-
             Employee createdBy = new Employee();
             createdBy.setName(rs.getString("employee_name"));
             Division div = new Division();
@@ -307,12 +307,14 @@ public int countRequestsByRole(User user) {
             SELECT COUNT(*) AS total
             FROM RequestForLeave r
             INNER JOIN Employee e ON e.eid = r.created_by
+            LEFT JOIN Division d ON e.did = d.did
+            WHERE 1=1
         """;
 
         boolean isDirector = user.getRoles().stream()
             .anyMatch(r -> r.getName().equalsIgnoreCase("Director"));
         if (!isDirector) {
-            sql += " WHERE r.created_by IN (SELECT eid FROM Org)";
+            sql += " AND r.created_by IN (SELECT eid FROM Org)";
         }
 
         PreparedStatement stm = connection.prepareStatement(sql);
@@ -328,6 +330,7 @@ public int countRequestsByRole(User user) {
     }
     return count;
 }
+
 
 public void updateRequest(RequestForLeave r) {
     try {
