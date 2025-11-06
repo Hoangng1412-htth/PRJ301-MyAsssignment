@@ -1,6 +1,9 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-
+<%@ page import="java.time.LocalDate" %>
+<%
+    String today = LocalDate.now().toString(); // lấy ngày hiện tại yyyy-MM-dd
+%>
 <div class="leave-form-container">
     <h2>Tạo đơn nghỉ</h2>
 
@@ -17,12 +20,12 @@
 
         <div class="form-group">
             <label>Từ ngày:</label>
-            <input type="date" name="from" required />
+            <input type="date" name="from"  min="<%=today%>" required />
         </div>
 
         <div class="form-group">
             <label>Đến ngày:</label>
-            <input type="date" name="to" required />
+            <input type="date" name="to"  min="<%=today%>" required />
         </div>
         <c:if test="${not empty msg}">
             <div class="message">${msg}</div>
