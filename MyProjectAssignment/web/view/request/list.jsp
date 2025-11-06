@@ -1,6 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
 <h2>Danh sách đơn nghỉ</h2>
 
@@ -34,10 +33,10 @@
                 </td>
 
                 <!-- Từ ngày -->
-                <td><fmt:formatDate value="${r.from}" pattern="yyyy-MM-dd" /></td>
+                <td>${r.from}</td>
 
                 <!-- Đến ngày -->
-                <td><fmt:formatDate value="${r.to}" pattern="yyyy-MM-dd" /></td>
+                <td>${r.to}</td>
 
                 <!-- Thời lượng -->
                 <td>
@@ -70,29 +69,21 @@
                     </c:choose>
                 </td>
 
-                <!-- Chi tiết và sửa -->
+                <!-- Chi tiết -->
                 <td>
-                    <!-- Hiển thị nút Chi tiết -->
-                    <form action="${pageContext.request.contextPath}/request/view" method="get" style="display:inline;">
+                    <form action="${pageContext.request.contextPath}/request/review"
+                          method="get" style="display:inline;">
                         <input type="hidden" name="id" value="${r.id}">
                         <button type="submit" class="btn-action view">👁 Chi tiết</button>
                     </form>
-
-                    <!-- Hiển thị nút Sửa -->
-                    <form action="${pageContext.request.contextPath}/request/view" method="get" style="display:inline;">
-                        <input type="hidden" name="id" value="${r.id}">
-                        <button type="submit" class="btn-action edit">✏️ Sửa</button>
-                    </form>
-
-                    <!-- Nếu không có quyền, hiển thị thông báo -->
-                    <c:choose>
-                        <c:when test="${r.status == 1}">
-                            <div class="message">❌ Bạn không thể sửa đơn đã duyệt!</div>
-                        </c:when>
-                        <c:when test="${r.created_by.id == sessionScope.auth.employee.id}">
-                            <div class="message">❌ Bạn không thể duyệt đơn của chính mình!</div>
-                        </c:when>
-                    </c:choose>
+                        
+                        <!-- Nút sửa (chỉ người tạo đơn mới thấy) -->
+                        <c:if test="${r.status == 0 && sessionScope.auth.employee.id == r.created_by.id}">
+                            <form action="${pageContext.request.contextPath}/request/view" method="get" style="display:inline;">
+                                <input type="hidden" name="id" value="${r.id}">
+                                <button type="submit" class="btn-action edit">✏️ Sửa</button>
+                            </form>
+                        </c:if>
                 </td>
             </tr>
         </c:forEach>
@@ -100,7 +91,37 @@
 </table>
 
 <style>
-/* Định dạng nút */
+.request-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    margin-top: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.request-table th {
+    background-color: #ff8c1a;
+    color: white;
+    padding: 10px;
+    text-align: left;
+}
+
+.request-table td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.status {
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.status.inprogress { background-color: #fff3cd; color: #856404; }
+.status.approved { background-color: #d4edda; color: #155724; }
+.status.rejected { background-color: #f8d7da; color: #721c24; }
+
 .btn-action {
     font-weight: bold;
     border: none;
@@ -108,28 +129,16 @@
     border-radius: 6px;
     cursor: pointer;
     color: white;
-    transition: background-color 0.3s;
-    margin-right: 4px;
+    background-color: #2a9d8f;
+    transition: 0.3s;
 }
-.btn-action.view {
-    background-color: #0077b6;
-}
-.btn-action.view:hover {
-    background-color: #005f8d;
-}
+
+.btn-action:hover { background-color: #21867a; }
 .btn-action.edit {
-    background-color: #ffb703;
-    color: #333;
+    background-color: #f4a261;
 }
 .btn-action.edit:hover {
-    background-color: #e0a800;
+    background-color: #e76f51;
 }
-.message {
-    font-weight: bold;
-    color: #721c24;
-    background-color: #f8d7da;
-    padding: 10px;
-    border-radius: 6px;
-    margin-top: 10px;
-}
+
 </style>
