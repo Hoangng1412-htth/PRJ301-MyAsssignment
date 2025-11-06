@@ -117,9 +117,10 @@ public void insert(RequestForLeave model) {
         stm.executeUpdate();
     } catch (SQLException ex) {
         Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
-    } finally {
-        closeConnection();
-    }
+    } 
+//    finally {
+//        closeConnection();
+//    }
 }
 
     @Override
@@ -127,10 +128,21 @@ public void insert(RequestForLeave model) {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
-    @Override
-    public void delete(RequestForLeave model) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+   @Override
+public void delete(RequestForLeave model) {
+    try {
+        String sql = "DELETE FROM RequestForLeave WHERE rid = ?";
+        PreparedStatement stm = connection.prepareStatement(sql);
+        stm.setInt(1, model.getId());
+        stm.executeUpdate();
+    } catch (SQLException ex) {
+        Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
+    } 
+//    finally {
+//        closeConnection();
+//    }
+}
+
 public ArrayList<RequestForLeave> getRequestsByRole(User user) {
     ArrayList<RequestForLeave> list = new ArrayList<>();
     try {
@@ -317,37 +329,48 @@ public int countRequestsByRole(User user) {
     return count;
 }
 
-   public void updateRequest(RequestForLeave r) {
+public void updateRequest(RequestForLeave r) {
     try {
         String sql = """
             UPDATE RequestForLeave
-            SET [from] = ?, [to] = ?, reason = ?, status = ?, processed_by = ?
+            SET [from] = ?, 
+                [to] = ?, 
+                reason = ?, 
+                type = ?, 
+                status = ?, 
+                processed_by = ?
             WHERE rid = ?
         """;
         PreparedStatement stm = connection.prepareStatement(sql);
         stm.setDate(1, r.getFrom());
         stm.setDate(2, r.getTo());
         stm.setString(3, r.getReason());
-        stm.setInt(4, r.getStatus());
+        stm.setString(4, r.getType()); // ✅ thêm type
+        stm.setInt(5, r.getStatus());
+
+        // Nếu có người duyệt thì set processed_by, nếu không thì null
         if (r.getProcessed_by() != null) {
-            stm.setInt(5, r.getProcessed_by().getId());
+            stm.setInt(6, r.getProcessed_by().getId());
         } else {
-            stm.setNull(5, java.sql.Types.INTEGER);
+            stm.setNull(6, java.sql.Types.INTEGER);
         }
-        stm.setInt(6, r.getId());
+
+        stm.setInt(7, r.getId());
         stm.executeUpdate();
+         connection.commit();
+
     } catch (SQLException ex) {
-        Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
-    } finally {
-        closeConnection();
-    }
+        Logger.getLogger(RequestForLeaveDBContext.class.getName())
+              .log(Level.SEVERE, null, ex);
+    } 
 }
+
 
 
     public RequestForLeave getById(int id) {
     try {
         String sql = """
-            SELECT r.rid, r.[from], r.[to], r.reason, r.status,
+            SELECT r.rid, r.[from], r.[to], r.reason, r.status,r.type,
                    e.ename AS created_name, d.dname AS division_name,
                    p.ename AS processed_name
             FROM RequestForLeave r
@@ -366,7 +389,8 @@ public int countRequestsByRole(User user) {
             r.setTo(rs.getDate("to"));
             r.setReason(rs.getString("reason"));
             r.setStatus(rs.getInt("status"));
-
+             r.setType(rs.getString("type")); 
+             
             Employee createdBy = new Employee();
             createdBy.setName(rs.getString("created_name"));
             Division d = new Division();
@@ -383,9 +407,10 @@ public int countRequestsByRole(User user) {
         }
     } catch (SQLException ex) {
         Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
-    } finally {
-        closeConnection();
-    }
+    } 
+//    finally {
+//        closeConnection();
+//    }
     return null;
 }
 
