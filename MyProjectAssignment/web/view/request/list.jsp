@@ -69,21 +69,25 @@
                     </c:choose>
                 </td>
 
-                <!-- Chi tiết -->
+               
                 <td>
-                    <form action="${pageContext.request.contextPath}/request/review"
-                          method="get" style="display:inline;">
-                        <input type="hidden" name="id" value="${r.id}">
-                        <button type="submit" class="btn-action view">👁 Chi tiết</button>
-                    </form>
+                    
+                    <c:choose>
                         
-                        <!-- Nút sửa (chỉ người tạo đơn mới thấy) -->
-                        <c:if test="${r.status == 0 && sessionScope.auth.employee.id == r.created_by.id}">
-                            <form action="${pageContext.request.contextPath}/request/view" method="get" style="display:inline;">
+                        <c:when test="${sessionScope.auth.employee.id != r.created_by.id && !sessionScope.auth.roles.contains('Director')}">
+                            <form action="${pageContext.request.contextPath}/request/review" method="get" style="display:inline;">
                                 <input type="hidden" name="id" value="${r.id}">
-                                <button type="submit" class="btn-action edit">✏️ Sửa</button>
+                                <button type="submit" class="btn-action view">👁 Chi tiết</button>
                             </form>
-                        </c:if>
+                        </c:when>
+                    </c:choose>
+                    
+                    <c:if test="${sessionScope.auth.employee.id == r.created_by.id}">
+                        <form action="${pageContext.request.contextPath}/request/view" method="get" style="display:inline;">
+                            <input type="hidden" name="id" value="${r.id}">
+                            <button type="submit" class="btn-action edit">✏️ Sửa</button>
+                        </form>
+                    </c:if>
                 </td>
             </tr>
         </c:forEach>
