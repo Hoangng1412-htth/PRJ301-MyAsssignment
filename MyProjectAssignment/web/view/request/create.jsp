@@ -27,9 +27,7 @@
             <label>Đến ngày:</label>
             <input type="date" name="to"  min="<%=today%>" required />
         </div>
-        <c:if test="${not empty msg}">
-            <div class="message">${msg}</div>
-        </c:if>
+    
 
         <div class="form-group">
             <label>Lý do nghỉ:</label>
@@ -39,10 +37,20 @@
         <button type="submit">Gửi đơn</button>
 
         <c:if test="${not empty msg}">
-            <p class="message
+            <p id="alert-msg" class="message
                 <c:out value='${msg.startsWith("✅") ? "success" : "error"}'/>">
                 ${msg}
             </p>
+               <script>
+        setTimeout(function () {
+            const msg = document.getElementById("alert-msg");
+            if (msg) {
+                msg.style.transition = "opacity 0.5s";
+                msg.style.opacity = "0";
+                setTimeout(() => msg.remove(), 500); // Xóa hẳn sau khi mờ dần
+            }
+        }, 3000); // 3s
+    </script>
         </c:if>
     </form>
 </div>
