@@ -36,42 +36,38 @@ protected void processPost(HttpServletRequest req, HttpServletResponse resp, Use
     String reason = req.getParameter("reason");
     String type = req.getParameter("type");
 
-    // Kiểm tra dữ liệu bắt buộc
     if (from == null || to == null || reason == null || type == null
             || from.isEmpty() || to.isEmpty() || reason.isEmpty() || type.isEmpty()) {
-
         req.setAttribute("msg", "⚠️ Vui lòng điền đầy đủ thông tin!");
-
     } else {
         try {
-            Date fromDate = Date.valueOf(from);
-            Date toDate = Date.valueOf(to);
+            LocalDate today = LocalDate.now();
+            LocalDate fromDate = LocalDate.parse(from);
+            LocalDate toDate = LocalDate.parse(to);
 
-            // ✅ Kiểm tra ngày kết thúc phải >= ngày bắt đầu
-            if (toDate.before(fromDate)) {
-                req.setAttribute("msg", "⚠️ Ngày kết thúc phải sau hoặc bằng ngày bắt đầu!");
+            if (fromDate.isBefore(today) || toDate.isBefore(today)) {
+                req.setAttribute("msg", "❌ Ngày bắt đầu và kết thúc không được trước ngày hiện tại!");
+            } else if (toDate.isBefore(fromDate)) {
+                req.setAttribute("msg", "⚠️ Ngày kết thúc không thể trước ngày bắt đầu!");
             } else {
-                // Tạo đối tượng RequestForLeave
+                // ✅ Hợp lệ: tạo đơn nghỉ
                 RequestForLeave r = new RequestForLeave();
-                r.setFrom(fromDate);
-                r.setTo(toDate);
+                r.setFrom(Date.valueOf(from));
+                r.setTo(Date.valueOf(to));
                 r.setReason(reason);
                 r.setType(type);
-                r.setStatus(0); // 0: chờ duyệt
+                r.setStatus(0);
                 r.setCreated_by(user.getEmployee());
 
-                // Lưu vào DB
                 RequestForLeaveDBContext db = new RequestForLeaveDBContext();
                 db.insert(r);
 
-                req.setAttribute("msg", "✅ Gửi đơn nghỉ thành công!");
+                req.setAttribute("msg", "✅ Gửi đơn thành công!");
             }
 
-        } catch (IllegalArgumentException ex) {
-            req.setAttribute("msg", "⚠️ Định dạng ngày không hợp lệ!");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            req.setAttribute("msg", "❌ Có lỗi xảy ra khi lưu đơn nghỉ!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            req.setAttribute("msg", "❌ Lỗi khi gửi đơn nghỉ!");
         }
     }
 
@@ -79,6 +75,5 @@ protected void processPost(HttpServletRequest req, HttpServletResponse resp, Use
     req.setAttribute("contentPage", "/view/request/create.jsp");
     req.getRequestDispatcher("/view/layout/layout.jsp").forward(req, resp);
 }
-
 }
 
