@@ -83,7 +83,7 @@
                     </c:choose>
                     
                     <c:if test="${sessionScope.auth.employee.id == r.created_by.id}">
-                        <form action="${pageContext.request.contextPath}/request/view" method="get" style="display:inline;">
+                        <form action="${pageContext.request.contextPath}/request/view" method="post" style="display:inline;">
                             <input type="hidden" name="id" value="${r.id}">
                             <button type="submit" class="btn-action edit">✏️ Sửa</button>
                         </form>
