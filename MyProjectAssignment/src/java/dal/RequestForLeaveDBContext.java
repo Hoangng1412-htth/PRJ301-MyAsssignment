@@ -399,35 +399,39 @@ public HashMap<Integer, ArrayList<RequestForLeave>> getLeavesInRange(
     HashMap<Integer, ArrayList<RequestForLeave>> map = new HashMap<>();
     if (employees == null || employees.isEmpty()) return map;
 
- try {
-        // 1) Tạo chuỗi placeholder: "?, ?, ?, ..."
+    try {
+        // 1️⃣ Tạo chuỗi placeholder: ?, ?, ?, ...
         StringBuilder placeholders = new StringBuilder();
         for (int i = 0; i < employees.size(); i++) {
             placeholders.append("?");
             if (i < employees.size() - 1) placeholders.append(",");
         }
 
-        // 2) Viết SQL dùng placeholder
-        String sql =
-            "SELECT r.rid, r.created_by, r.[from], r.[to], r.status " +
-            "FROM RequestForLeave r " +
-            "WHERE r.created_by IN (" + placeholders + ") " +
-            "  AND r.[from] <= ? " +
-            "  AND r.[to] >= ?";
+        // 2️⃣ SQL chỉ lấy đơn đã duyệt, có giao với tháng cần xem
+  StringBuilder sql = new StringBuilder();
+sql.append("SELECT r.rid, r.created_by, r.[from], r.[to], r.reason, r.status ")
+   .append("FROM RequestForLeave r ")
+   .append("WHERE r.status = 1 ")
+   .append("AND r.created_by IN (")
+   .append(placeholders)
+   .append(") ")
+   .append("AND r.[from] <= ? ")
+   .append("AND r.[to] >= ?");
+PreparedStatement stm = connection.prepareStatement(sql.toString());
 
-        PreparedStatement stm = connection.prepareStatement(sql);
 
-        // 3) Set các employeeId cho IN (...)
+
+        // 3️⃣ Set danh sách employeeId
         int idx = 1;
         for (Employee e : employees) {
             stm.setInt(idx++, e.getId());
         }
 
-        // 4) Set 2 tham số ngày
+        // 4️⃣ Set tham số ngày
         stm.setDate(idx++, to);
         stm.setDate(idx, from);
 
-        // 5) Execute và đọc kết quả
+        // 5️⃣ Đọc kết quả
         ResultSet rs = stm.executeQuery();
         while (rs.next()) {
             int empId = rs.getInt("created_by");
@@ -436,6 +440,7 @@ public HashMap<Integer, ArrayList<RequestForLeave>> getLeavesInRange(
             r.setId(rs.getInt("rid"));
             r.setFrom(rs.getDate("from"));
             r.setTo(rs.getDate("to"));
+            r.setReason(rs.getString("reason"));
             r.setStatus(rs.getInt("status"));
 
             map.computeIfAbsent(empId, k -> new ArrayList<>()).add(r);
@@ -443,8 +448,10 @@ public HashMap<Integer, ArrayList<RequestForLeave>> getLeavesInRange(
     } catch (SQLException ex) {
         Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
     }
+
     return map;
 }
+
 
 public ArrayList<String> getAllDivisions() {
     ArrayList<String> divisions = new ArrayList<>();
@@ -467,7 +474,103 @@ public ArrayList<String> getAllDivisions() {
 
 
 
+public ArrayList<RequestForLeave> getRequestsByFilter(
+        User user, String searchName, String fromDate, String toDate,
+        String status, String division) {
 
+    ArrayList<RequestForLeave> list = new ArrayList<>();
+
+    try {
+        StringBuilder sql = new StringBuilder("""
+            WITH Org AS (
+                SELECT e.eid, e.did
+                FROM Employee e WHERE e.eid = ?
+                UNION ALL
+                SELECT c.eid, c.did
+                FROM Employee c
+                JOIN Org o ON c.supervisorid = o.eid
+            )
+            SELECT 
+                r.rid, r.created_by, r.[from], r.[to], r.reason, r.status, r.type,
+                e.ename AS employee_name, d.dname AS division_name,
+                p.eid AS processed_id, p.ename AS processed_name
+            FROM RequestForLeave r
+            INNER JOIN Employee e ON e.eid = r.created_by
+            LEFT JOIN Division d ON e.did = d.did
+            LEFT JOIN Employee p ON p.eid = r.processed_by
+            WHERE 1=1
+        """);
+
+        // ✅ Quyền: Director xem tất cả, các vai trò khác chỉ xem của mình & cấp dưới
+        boolean isDirector = user.getRoles().stream()
+                .anyMatch(r -> r.getName().equalsIgnoreCase("Director"));
+        if (!isDirector) {
+            sql.append(" AND r.created_by IN (SELECT eid FROM Org)");
+        }
+
+        // ✅ Bộ lọc
+        if (!searchName.isEmpty())
+            sql.append(" AND e.ename LIKE ?");
+        if (!fromDate.isEmpty())
+            sql.append(" AND r.[from] >= ?");
+        if (!toDate.isEmpty())
+            sql.append(" AND r.[to] <= ?");
+        if (!status.isEmpty())
+            sql.append(" AND r.status = ?");
+        if (isDirector && !division.isEmpty())
+            sql.append(" AND d.dname LIKE ?");
+
+        sql.append(" ORDER BY r.created_time DESC");
+
+        PreparedStatement stm = connection.prepareStatement(sql.toString());
+
+        int i = 1;
+        stm.setInt(i++, user.getEmployee().getId());
+        if (!searchName.isEmpty()) stm.setString(i++, "%" + searchName + "%");
+        if (!fromDate.isEmpty()) stm.setDate(i++, Date.valueOf(fromDate));
+        if (!toDate.isEmpty()) stm.setDate(i++, Date.valueOf(toDate));
+        if (!status.isEmpty()) stm.setInt(i++, Integer.parseInt(status));
+        if (isDirector && !division.isEmpty()) stm.setString(i++, "%" + division + "%");
+
+        ResultSet rs = stm.executeQuery();
+        while (rs.next()) {
+            RequestForLeave r = new RequestForLeave();
+            r.setId(rs.getInt("rid"));
+            r.setFrom(rs.getDate("from"));
+            r.setTo(rs.getDate("to"));
+            r.setReason(rs.getString("reason"));
+            r.setStatus(rs.getInt("status"));
+            r.setType(rs.getString("type"));
+
+            Employee created = new Employee();
+            created.setId(rs.getInt("created_by"));
+            created.setName(rs.getString("employee_name"));
+            Division div = new Division();
+            div.setDname(rs.getString("division_name"));
+            created.setDiv(div);
+            r.setCreated_by(created);
+
+            int processedId = rs.getInt("processed_id");
+            if (!rs.wasNull()) {
+                Employee processed = new Employee();
+                processed.setId(processedId);
+                processed.setName(rs.getString("processed_name"));
+                r.setProcessed_by(processed);
+            }
+
+            list.add(r);
+        }
+
+        System.out.println("✅ Filter result: " + list.size() + " records found");
+
+    } catch (SQLException ex) {
+        Logger.getLogger(RequestForLeaveDBContext.class.getName())
+              .log(Level.SEVERE, null, ex);
+    } finally {
+        closeConnection();
+    }
+    return list;
+}
 
 public ArrayList<RequestForLeave> getFilteredRequests(
         User user, String name, String fromDate, String toDate,
@@ -550,6 +653,29 @@ public ArrayList<RequestForLeave> getFilteredRequests(
         Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
     }
     return list;
+}
+public ArrayList<Division> getAllDivisionsForAgenda() {
+    ArrayList<Division> divisions = new ArrayList<>();
+    String sql = "SELECT did, dname FROM Division ORDER BY dname";
+
+    try (PreparedStatement stm = connection.prepareStatement(sql);
+         ResultSet rs = stm.executeQuery()) {
+
+        while (rs.next()) {
+            Division d = new Division();
+            d.setId(rs.getInt("did"));       // dùng int vì Division kế thừa BaseModel
+            d.setDname(rs.getString("dname"));
+            divisions.add(d);
+        }
+
+        System.out.println("✅ [Agenda] Found " + divisions.size() + " divisions");
+
+    } catch (SQLException ex) {
+        Logger.getLogger(RequestForLeaveDBContext.class.getName())
+              .log(Level.SEVERE, null, ex);
+    }
+
+    return divisions;
 }
 
 }
