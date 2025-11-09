@@ -8,7 +8,7 @@ package model;
  *
  * @author ng hoang
  */
-public class Division {
+public class Division extends BaseModel{
     private String dname;
 
     public String getDname() {
