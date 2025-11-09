@@ -677,5 +677,43 @@ public ArrayList<Division> getAllDivisionsForAgenda() {
 
     return divisions;
 }
+public int getApprovalLevelByUserId(int uid) {
+    int level = 0;
+    try {
+        String sql = """
+            SELECT MAX(r.approval_level) AS level
+            FROM [UserRole] ur
+            INNER JOIN [Role] r ON ur.rid = r.rid
+            WHERE ur.uid = ?
+        """;
+        PreparedStatement stm = connection.prepareStatement(sql);
+        stm.setInt(1, uid);
+        ResultSet rs = stm.executeQuery();
+        if (rs.next()) level = rs.getInt("level");
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return level;
+}
+
+public int getApprovalLevelByEmployeeId(int eid) {
+    int level = 0;
+    try {
+        String sql = """
+            SELECT MAX(r.approval_level) AS level
+            FROM Enrollment en
+            INNER JOIN [UserRole] ur ON en.uid = ur.uid
+            INNER JOIN [Role] r ON ur.rid = r.rid
+            WHERE en.eid = ?
+        """;
+        PreparedStatement stm = connection.prepareStatement(sql);
+        stm.setInt(1, eid);
+        ResultSet rs = stm.executeQuery();
+        if (rs.next()) level = rs.getInt("level");
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return level;
+}
 
 }
