@@ -24,7 +24,14 @@ public class RequestViewController extends BaseRequiredAuthorizationController {
 
         if (request == null) {
             req.setAttribute("msg", "❌ Không tìm thấy đơn nghỉ!");
+        } else if (request.getCreated_by() != null
+                && request.getCreated_by().getId() != user.getEmployee().getId()) {
+            req.getSession().setAttribute("flashError", "🚫 Bạn không có quyền sửa hoặc xem đơn này!");
+            resp.sendRedirect(req.getContextPath() + "/request/list");
+            return;
+
         }
+
         req.setAttribute("request", request);
         req.setAttribute("pageTitle", "Chỉnh sửa đơn nghỉ");
         req.setAttribute("contentPage", "/view/request/view.jsp");
@@ -39,25 +46,32 @@ public class RequestViewController extends BaseRequiredAuthorizationController {
         String action = req.getParameter("action");
         RequestForLeaveDBContext db = new RequestForLeaveDBContext();
 
+        RequestForLeave existing = db.getById(id);
+        if (existing == null || existing.getCreated_by() == null
+                || existing.getCreated_by().getId() != user.getEmployee().getId()) {
+            req.getSession().setAttribute("flashError", "🚫 Bạn không có quyền sửa hoặc xem đơn này!");
+            resp.sendRedirect(req.getContextPath() + "/request/list");
+            return;
+
+        }
+
         try {
             if ("delete".equals(action)) {
-                // 🗑 Xóa đơn
-                RequestForLeave r = new RequestForLeave();
-                r.setId(id);
-                db.delete(r);
+                db.delete(existing);
                 resp.sendRedirect(req.getContextPath() + "/request/list");
                 return;
             }
 
-            // 💾 Cập nhật
             String fromStr = req.getParameter("from");
             String toStr = req.getParameter("to");
             String reason = req.getParameter("reason");
             String type = req.getParameter("type");
 
             if (fromStr == null || toStr == null || reason == null || type == null
-                    || fromStr.trim().isEmpty() || toStr.trim().isEmpty() || reason.trim().isEmpty() || type.trim().isEmpty()) {
-                
+                    || fromStr.trim().isEmpty() || toStr.trim().isEmpty()
+                    || reason.trim().isEmpty() || type.trim().isEmpty()) {
+
+                req.setAttribute("msg", "⚠️ Vui lòng nhập đầy đủ thông tin!");
             } else {
                 LocalDate today = LocalDate.now();
                 LocalDate fromDate = LocalDate.parse(fromStr);
@@ -68,25 +82,19 @@ public class RequestViewController extends BaseRequiredAuthorizationController {
                 } else if (toDate.isBefore(fromDate)) {
                     req.setAttribute("msg", "⚠️ Ngày kết thúc phải sau hoặc bằng ngày bắt đầu!");
                 } else {
-                    RequestForLeave r = new RequestForLeave();
-                    r.setId(id);
-                    r.setFrom(Date.valueOf(fromDate));
-                    r.setTo(Date.valueOf(toDate));
-                    r.setReason(reason);
-                    r.setType(type);
-                    r.setStatus(0); // 0 = chờ duyệt lại
-                    r.setCreated_by(user.getEmployee());
+                    existing.setFrom(Date.valueOf(fromDate));
+                    existing.setTo(Date.valueOf(toDate));
+                    existing.setReason(reason);
+                    existing.setType(type);
+                    existing.setStatus(0);
 
-                    db.updateRequest(r);
-
+                    db.updateRequest(existing);
                     req.setAttribute("msg", "✅ Cập nhật đơn nghỉ thành công!");
                 }
             }
 
-            // ✅ Luôn reload lại dữ liệu mới nhất sau khi xử lý
             RequestForLeave updated = db.getById(id);
             req.setAttribute("request", updated);
-
             req.setAttribute("pageTitle", "Chỉnh sửa đơn nghỉ");
             req.setAttribute("contentPage", "/view/request/view.jsp");
             req.getRequestDispatcher("/view/layout/layout.jsp").forward(req, resp);
